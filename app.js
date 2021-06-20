@@ -54,12 +54,15 @@ const client = new Client({
 });
 
 client.on('message', msg => {
+    console.log(msg.body);
+  
     if(msg.from.includes('-')){
         console.log('from group');
     }else{
         request(`https://simsumi.herokuapp.com/api?text=${msg.body}&lang=id`, function(error, response, body) {
             if (!error && response.statusCode == 200) {
-                msg.reply(`${body}`);
+                var simiMsg = JSON.parse(body);
+                msg.reply(`${simiMsg.success}`);
             }
         });
     }
