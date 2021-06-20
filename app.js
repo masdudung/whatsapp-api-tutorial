@@ -59,7 +59,8 @@ client.on('message', msg => {
     if(msg.from.includes('-')){
         console.log('from group');
     }else{
-        request(`https://simsumi.herokuapp.com/api?text=${msg.body}&lang=id`, function(error, response, body) {
+        var simiApiUrl = `https://api.simsimi.net/v1/?text=${msg.body}&lang=id`;
+        request(simiApiUrl, function(error, response, body) {
             if (!error && response.statusCode == 200) {
                 var simiMsg = JSON.parse(body);
                 client.sendMessage(msg.from, simiMsg.success);
