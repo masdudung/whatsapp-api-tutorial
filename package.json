@@ -21,7 +21,10 @@
     "express-validator": "^6.9.2",
     "http": "0.0.1-security",
     "qrcode": "^1.4.4",
+    "qrcode-terminal": "^0.12.0",
     "socket.io": "2.3.0",
+    "superagent": "^6.1.0",
+    "whatsapp-web.js": "latest"
   },
   "engines": {
     "node": "v12.10.0"
