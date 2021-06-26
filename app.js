@@ -3,6 +3,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const socketIO = require('socket.io');
 const qrcode = require('qrcode');
+const qrcodeTerminal = require('qrcode-terminal');
 const http = require('http');
 const fs = require('fs');
 const { phoneNumberFormatter } = require('./helpers/formatter');
@@ -28,6 +29,8 @@ let sessionCfg;
 if (fs.existsSync(SESSION_FILE_PATH)) {
   sessionCfg = require(SESSION_FILE_PATH);
 }
+
+client.initialize();
 
 app.get('/', (req, res) => {
   res.sendFile('index.html', {
@@ -59,62 +62,42 @@ client.on('message', msg => {
     if(msg.from.includes('-')){
         console.log('from group');
     }else{
-        var simiApiUrl = `https://api.simsimi.net/v1/?text=${msg.body}&lang=id`;
-        request(simiApiUrl, function(error, response, body) {
-            if (!error && response.statusCode == 200) {
-                var simiMsg = JSON.parse(body);
-                client.sendMessage(msg.from, simiMsg.success);
-            }
-        });
+      client.sendMessage(msg.from, msg.body);
     }
 });
 
-client.initialize();
+client.on('qr', (qr) => {
+  console.log('QR RECEIVED', qr);
+  qrcodeTerminal.generate(qr, {small: true})
+});
 
-// Socket IO
-io.on('connection', function(socket) {
-  socket.emit('message', 'Connecting...');
+client.on('ready', () => {
+  console.log('ready', 'Whatsapp is ready!');
+  console.log('message', 'Whatsapp is ready!');
+});
 
-  client.on('qr', (qr) => {
-    console.log('QR RECEIVED', qr);
-    qrcode.toDataURL(qr, (err, url) => {
-      socket.emit('qr', url);
-      socket.emit('message', 'QR Code received, scan please!');
-    });
-  });
-
-  client.on('ready', () => {
-    socket.emit('ready', 'Whatsapp is ready!');
-    socket.emit('message', 'Whatsapp is ready!');
-  });
-
-  client.on('authenticated', (session) => {
-    socket.emit('authenticated', 'Whatsapp is authenticated!');
-    socket.emit('message', 'Whatsapp is authenticated!');
-    console.log('AUTHENTICATED', session);
-    sessionCfg = session;
-    fs.writeFile(SESSION_FILE_PATH, JSON.stringify(session), function(err) {
-      if (err) {
-        console.error(err);
-      }
-    });
-  });
-
-  client.on('auth_failure', function(session) {
-    socket.emit('message', 'Auth failure, restarting...');
-  });
-
-  client.on('disconnected', (reason) => {
-    socket.emit('message', 'Whatsapp is disconnected!');
-    fs.unlinkSync(SESSION_FILE_PATH, function(err) {
-        if(err) return console.log(err);
-        console.log('Session file deleted!');
-    });
-    client.destroy();
-    client.initialize();
+client.on('authenticated', (session) => {
+  console.log('AUTHENTICATED', session);
+  sessionCfg = session;
+  fs.writeFile(SESSION_FILE_PATH, JSON.stringify(session), function(err) {
+    if (err) {
+      console.error(err);
+    }
   });
 });
 
+client.on('auth_failure', function(session) {
+  console.log('message', 'Auth failure, restarting...');
+});
+
+client.on('disconnected', (reason) => {
+  fs.unlinkSync(SESSION_FILE_PATH, function(err) {
+      if(err) return console.log(err);
+      console.log('Session file deleted!');
+  });
+  client.destroy();
+  client.initialize();
+});
 
 const checkRegisteredNumber = async function(number) {
   const isRegistered = await client.isRegisteredUser(number);
