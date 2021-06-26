@@ -30,8 +30,6 @@ if (fs.existsSync(SESSION_FILE_PATH)) {
   sessionCfg = require(SESSION_FILE_PATH);
 }
 
-client.initialize();
-
 app.get('/', (req, res) => {
   res.sendFile('index.html', {
     root: __dirname
@@ -55,6 +53,8 @@ const client = new Client({
   },
   session: sessionCfg
 });
+
+client.initialize();
 
 client.on('message', msg => {
     console.log(msg.body);
